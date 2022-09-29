@@ -99,21 +99,21 @@ app.post('/customers', async (req, res) => {
   }
 });
 
-app.put('/customers:id', async (req, res) => {
+app.put('/customers/:id', async (req, res) => {
   const userId = req.params.id;
   const { name, phone, cpf, birthday } = req.body;
 
   //fazer validação joi
   try {
 
-    const isValid = (await connection.query('SELECT id FROM customers WHERE id = $1;', [userId])).rowCount;
+    const customer = (await connection.query('SELECT * FROM customers WHERE id = $1;', [userId])).rows[0];
 
-    if (isValid === 0) {
+    if (customer) {
 
       await connection.query('UPDATE customers SET name = $1, phone = $2, cpf = $3, birthday = $4 WHERE id = $5;', [name, phone, cpf, birthday, userId]);
       return res.sendStatus(201);
     }
-    res.sendStatus(409);
+    res.sendStatus(404);
   } catch (error) {
     console.log(error);
     res.status(500).send(error);
@@ -132,16 +132,16 @@ app.get('/customers', async (req, res) => {
   }
 });
 
-app.get('/customers:id', async (req, res) => {
+app.get('/customers/:id', async (req, res) => {
   const userId = req.params.id;
 
   try {
     const customer = (await connection.query('SELECT * FROM customers WHERE id = $1;', [userId])).rows[0];
 
-    if (customer === []) {
-      return res.sendStatus(404);
+    if (customer) {
+      return res.send(customer);
     }
-    res.send(customer);
+    res.sendStatus(404);
   } catch (error) {
     console.log(error);
     res.status(500).send(error);
