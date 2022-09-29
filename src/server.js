@@ -79,6 +79,47 @@ app.get('/games', async (req, res) => {
   }
 });
 
+app.post('/customers', async (req, res) => {
+  const { name, phone, cpf, birthday } = req.body;
+
+  //fazer validação joi
+  try {
+
+    const isValid = (await connection.query('SELECT id FROM customers WHERE cpf = $1;', [cpf])).rowCount;
+
+    if (isValid === 0) {
+
+      await connection.query('INSERT INTO customers (name, phone, cpf, birthday) VALUES ($1,$2,$3,$4);', [name, phone, cpf, birthday]);
+      return res.sendStatus(201);
+    }
+    res.sendStatus(409);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send(error);
+  }
+});
+
+app.put('/customers:id', async (req, res) => {
+  const userId = req.params.id;
+  const { name, phone, cpf, birthday } = req.body;
+
+  //fazer validação joi
+  try {
+
+    const isValid = (await connection.query('SELECT id FROM customers WHERE id = $1;', [userId])).rowCount;
+
+    if (isValid === 0) {
+
+      await connection.query('UPDATE customers SET name = $1, phone = $2, cpf = $3, birthday = $4 WHERE id = $5;', [name, phone, cpf, birthday, userId]);
+      return res.sendStatus(201);
+    }
+    res.sendStatus(409);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send(error);
+  }
+});
+
 app.listen(process.env.PORT, () => {
   console.log(`Listen on port ${process.env.PORT}`);
 });
