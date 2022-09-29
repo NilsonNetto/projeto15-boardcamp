@@ -120,6 +120,34 @@ app.put('/customers:id', async (req, res) => {
   }
 });
 
+app.get('/customers', async (req, res) => {
+
+  try {
+    const customers = (await connection.query('SELECT * FROM customers;')).rows;
+    res.send(customers);
+
+  } catch (error) {
+    console.log(error);
+    res.status(500).send(error);
+  }
+});
+
+app.get('/customers:id', async (req, res) => {
+  const userId = req.params.id;
+
+  try {
+    const customer = (await connection.query('SELECT * FROM customers WHERE id = $1;', [userId])).rows[0];
+
+    if (customer === []) {
+      return res.sendStatus(404);
+    }
+    res.send(customer);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send(error);
+  }
+});
+
 app.listen(process.env.PORT, () => {
   console.log(`Listen on port ${process.env.PORT}`);
 });
