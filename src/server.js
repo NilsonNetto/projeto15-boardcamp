@@ -1,179 +1,24 @@
 import express from "express";
 import dotenv from "dotenv";
-import pg from "pg";
 import cors from "cors";
+import categoriesRouter from "../routers/categories.routers.js";
+import customersRouter from "../routers/customers.routers.js";
+import gamesRouter from "../routers/games.routers.js";
+import rentalsRouter from "../routers/rentals.routers.js";
 dotenv.config();
 
 const app = express();
 
-const { Pool } = pg;
-
-const connection = new Pool({
-  connectionString: process.env.DATABASE_URL,
-});
-
 app.use(express.json());
 app.use(cors());
 
-app.post('/categories', async (req, res) => {
-  const { name } = req.body;
+app.use(categoriesRouter);
 
-  //fazer validação joi para não ser vazio
-  try {
-    let isRepeated = (await connection.query('SELECT id FROM categories WHERE name = $1;', [name])).rowCount;
+app.use(customersRouter);
 
-    if (isRepeated === 0) {
+app.use(gamesRouter);
 
-      await connection.query('INSERT INTO categories (name) VALUES ($1);', [name]);
-      res.sendStatus(201);
-    } else {
-      res.sendStatus(409);
-    }
-  } catch (error) {
-    console.log(error);
-    res.status(500).send(error);
-  }
-
-});
-
-app.get('/categories', async (req, res) => {
-
-  try {
-    const categories = (await connection.query('SELECT * FROM categories;')).rows;
-
-    res.send(categories);
-  } catch (error) {
-    console.log(error);
-    res.status(500).send(error);
-  }
-});
-
-app.post('/games', async (req, res) => {
-  const game = req.body;
-
-  try {
-    const isValid = (await connection.query('SELECT id FROM games WHERE name = $1', [game.name])).rowCount;
-
-    //fazer validação joi para não ser vazio
-    if (isValid === 0) {
-      await connection.query('INSERT INTO games (name, image, "stockTotal", "categoryId", "pricePerDay") VALUES ($1,$2,$3,$4,$5);', [game.name, game.image, game.stockTotal, game.categoryId, game.pricePerDay]);
-      return res.sendStatus(201);
-    }
-
-    res.sendStatus(409);
-
-  } catch (error) {
-    console.log(error);
-    res.status(500).send(error);
-  }
-});
-
-app.get('/games', async (req, res) => {
-  try {
-    const games = (await connection.query('SELECT games.*, categories.name AS "categoryName" FROM games JOIN categories ON games."categoryId" = categories.id;')).rows;
-
-    res.send(games);
-  } catch (error) {
-    console.log(error);
-    res.status(500).send(error);
-  }
-});
-
-app.post('/customers', async (req, res) => {
-  const { name, phone, cpf, birthday } = req.body;
-
-  //fazer validação joi
-  try {
-
-    const isValid = (await connection.query('SELECT id FROM customers WHERE cpf = $1;', [cpf])).rowCount;
-
-    if (isValid === 0) {
-
-      await connection.query('INSERT INTO customers (name, phone, cpf, birthday) VALUES ($1,$2,$3,$4);', [name, phone, cpf, birthday]);
-      return res.sendStatus(201);
-    }
-    res.sendStatus(409);
-  } catch (error) {
-    console.log(error);
-    res.status(500).send(error);
-  }
-});
-
-app.put('/customers/:id', async (req, res) => {
-  const userId = req.params.id;
-  const { name, phone, cpf, birthday } = req.body;
-
-  //fazer validação joi
-  try {
-
-    const customer = (await connection.query('SELECT * FROM customers WHERE id = $1;', [userId])).rows[0];
-
-    if (customer) {
-
-      await connection.query('UPDATE customers SET name = $1, phone = $2, cpf = $3, birthday = $4 WHERE id = $5;', [name, phone, cpf, birthday, userId]);
-      return res.sendStatus(201);
-    }
-    res.sendStatus(404);
-  } catch (error) {
-    console.log(error);
-    res.status(500).send(error);
-  }
-});
-
-app.get('/customers', async (req, res) => {
-
-  try {
-    const customers = (await connection.query('SELECT * FROM customers;')).rows;
-    res.send(customers);
-
-  } catch (error) {
-    console.log(error);
-    res.status(500).send(error);
-  }
-});
-
-app.get('/customers/:id', async (req, res) => {
-  const userId = req.params.id;
-
-  try {
-    const customer = (await connection.query('SELECT * FROM customers WHERE id = $1;', [userId])).rows[0];
-
-    if (customer) {
-      return res.send(customer);
-    }
-    res.sendStatus(404);
-  } catch (error) {
-    console.log(error);
-    res.status(500).send(error);
-  }
-});
-
-app.post('/rentals', async (req, res) => {
-  const { customerId, gameId, daysRented } = req.body;
-  const rentDate = dayToday();
-
-  try {
-
-    const { pricePerDay } = (await connection.query('SELECT "pricePerDay" FROM games WHERE id = $1;', [gameId])).rows[0];
-    const originalPrice = pricePerDay * daysRented;
-
-    await connection.query('INSERT INTO rentals ("customerId", "gameId", "rentDate", "daysRented", "returnDate", "originalPrice", "delayFee") VALUES ($1,$2,$3,$4,NULL,$5,NULL);', [customerId, gameId, rentDate, daysRented, originalPrice]);
-
-    res.sendStatus(200);
-
-  } catch (error) {
-    console.log(error);
-    res.status(500).send(error);
-  }
-});
-
-function dayToday() {
-  const date = new Date();
-  const year = date.getFullYear().toString();
-  const month = date.getMonth().toString().padStart(2, "0");
-  const day = date.getDate().toString().padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
+app.use(rentalsRouter);
 
 app.listen(process.env.PORT, () => {
   console.log(`Listen on port ${process.env.PORT}`);
