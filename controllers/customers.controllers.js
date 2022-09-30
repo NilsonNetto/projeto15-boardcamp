@@ -42,8 +42,13 @@ const updateCustomer = async (req, res) => {
 };
 
 const listCustomers = async (req, res) => {
+  const { cpf } = req.query;
 
   try {
+    if (cpf) {
+      const customers = (await connection.query('SELECT * FROM customers WHERE cpf LIKE $1;', [`${cpf}%`])).rows;
+      return res.send(customers);
+    }
     const customers = (await connection.query('SELECT * FROM customers;')).rows;
     res.send(customers);
 
