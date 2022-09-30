@@ -70,7 +70,7 @@ app.post('/games', async (req, res) => {
 
 app.get('/games', async (req, res) => {
   try {
-    const games = (await connection.query('SELECT * FROM games;')).rows;
+    const games = (await connection.query('SELECT games.*, categories.name AS "categoryName" FROM games JOIN categories ON games."categoryId" = categories.id;')).rows;
 
     res.send(games);
   } catch (error) {
@@ -147,6 +147,33 @@ app.get('/customers/:id', async (req, res) => {
     res.status(500).send(error);
   }
 });
+
+app.post('/rentals', async (req, res) => {
+  const { customerId, gameId, daysRented } = req.body;
+  const rentDate = dayToday();
+
+  try {
+
+    const { pricePerDay } = (await connection.query('SELECT "pricePerDay" FROM games WHERE id = $1;', [gameId])).rows[0];
+    const originalPrice = pricePerDay * daysRented;
+
+    await connection.query('INSERT INTO rentals ("customerId", "gameId", "rentDate", "daysRented", "returnDate", "originalPrice", "delayFee") VALUES ($1,$2,$3,$4,NULL,$5,NULL);', [customerId, gameId, rentDate, daysRented, originalPrice]);
+
+    res.sendStatus(200);
+
+  } catch (error) {
+    console.log(error);
+    res.status(500).send(error);
+  }
+});
+
+function dayToday() {
+  const date = new Date();
+  const year = date.getFullYear().toString();
+  const month = date.getMonth().toString().padStart(2, "0");
+  const day = date.getDate().toString().padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
 
 app.listen(process.env.PORT, () => {
   console.log(`Listen on port ${process.env.PORT}`);
