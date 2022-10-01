@@ -79,12 +79,50 @@ const listRentals = async (req, res) => {
 
 };
 
+const endRental = async (req, res) => {
+  const rentalId = req.params.id;
+  const returnDate = dayToday();
+  const dayMiliseconds = 1000 * 60 * 60 * 24;
+  let delayFee = 0;
+
+  if (isNaN(rentalId)) {
+    return res.sendStatus(404);
+  }
+
+  try {
+    const rental = (await connection.query(`SELECT * FROM rentals WHERE id = $1;`, [rentalId])).rows[0];
+
+    if (!rental || isNaN(rentalId)) {
+      return res.sendStatus(404);
+    }
+
+    if (rental.returnDate) {
+      return res.sendStatus(400);
+    }
+
+    const daysPassed = (Math.floor((Date.now() - rental.rentDate.getTime()) / dayMiliseconds));
+
+    if (daysPassed > rental.daysRented) {
+      delayFee = daysPassed * rental.originalPrice;
+    }
+
+    await connection.query(`UPDATE rentals SET "returnDate" = $1, "delayFee" = $2 WHERE id = $3;`, [returnDate, delayFee, rentalId]);
+
+    res.sendStatus(200);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send(error);
+  }
+
+};
+
 function dayToday() {
   const date = new Date();
   const year = date.getFullYear().toString();
   const month = date.getMonth().toString().padStart(2, "0");
   const day = date.getDate().toString().padStart(2, "0");
+  console.log(`${year}-${month}-${day}`);
   return `${year}-${month}-${day}`;
 }
 
-export { createRental, listRentals };
+export { createRental, listRentals, endRental };

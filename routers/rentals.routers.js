@@ -7,4 +7,6 @@ router.post('/rentals', rentalsControllers.createRental);
 
 router.get('/rentals', rentalsControllers.listRentals);
 
+router.post('/rentals/:id/return', rentalsControllers.endRental);
+
 export default router;
