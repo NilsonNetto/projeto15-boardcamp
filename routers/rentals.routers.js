@@ -5,4 +5,6 @@ const router = express.Router();
 
 router.post('/rentals', rentalsControllers.createRental);
 
+router.get('/rentals', rentalsControllers.listRentals);
+
 export default router;

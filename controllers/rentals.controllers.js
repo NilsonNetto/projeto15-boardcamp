@@ -19,6 +19,66 @@ const createRental = async (req, res) => {
   }
 };
 
+const listRentals = async (req, res) => {
+  const { customerId, gameId } = req.query;
+
+  try {
+
+    if (customerId && !isNaN(customerId)) {
+      const rentals = (await connection.query(`SELECT 
+      rentals.*,
+      jsonb_build_object ('id', customers.id, 'name', customers.name) AS customer,
+      jsonb_build_object ('id', games.id, 'name', games.name, 'categoryId', games."categoryId", 'categoryName', categories.name) AS "game"
+    FROM rentals 
+    JOIN customers 
+      ON rentals."customerId" = customers.id 
+    JOIN games 
+      ON rentals."gameId" = games.id
+    JOIN categories
+      ON games."categoryId" = categories.id
+    WHERE rentals."customerId" = $1;`, [customerId])).rows;
+
+      return res.send(rentals);
+    }
+
+    if (gameId && !isNaN(gameId)) {
+      const rentals = (await connection.query(`SELECT 
+      rentals.*,
+      jsonb_build_object ('id', customers.id, 'name', customers.name) AS customer,
+      jsonb_build_object ('id', games.id, 'name', games.name, 'categoryId', games."categoryId", 'categoryName', categories.name) AS "game"
+    FROM rentals 
+    JOIN customers 
+      ON rentals."customerId" = customers.id 
+    JOIN games 
+      ON rentals."gameId" = games.id
+    JOIN categories
+      ON games."categoryId" = categories.id
+    WHERE rentals."gameId" = $1;`, [gameId])).rows;
+
+      return res.send(rentals);
+    }
+
+    const rentals = (await connection.query(`SELECT 
+      rentals.*,
+      jsonb_build_object ('id', customers.id, 'name', customers.name) AS customer,
+      jsonb_build_object ('id', games.id, 'name', games.name, 'categoryId', games."categoryId", 'categoryName', categories.name) AS "game"
+    FROM rentals 
+    JOIN customers 
+      ON rentals."customerId" = customers.id 
+    JOIN games 
+      ON rentals."gameId" = games.id
+    JOIN categories
+      ON games."categoryId" = categories.id;`)).rows;
+
+    res.send(rentals);
+
+  } catch (error) {
+    console.log(error);
+    res.status(500).send(error);
+  }
+
+};
+
 function dayToday() {
   const date = new Date();
   const year = date.getFullYear().toString();
@@ -27,4 +87,4 @@ function dayToday() {
   return `${year}-${month}-${day}`;
 }
 
-export { createRental };
+export { createRental, listRentals };
