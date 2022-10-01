@@ -1,19 +1,26 @@
 import connection from "../db/db.js";
+import { categorySchema } from "../schemas/categories.schema.js";
 
 const createCategory = async (req, res) => {
   const { name } = req.body;
 
-  //fazer validação joi para não ser vazio
-  try {
-    let isRepeated = (await connection.query('SELECT id FROM categories WHERE name = $1;', [name])).rowCount;
+  const validation = categorySchema.validate({ name }, { abortEarly: false });
 
-    if (isRepeated === 0) {
+  if (validation.error) {
+    const errors = validation.error.details.map(error => error.message);
+    return res.status(400).send(errors);
+  }
+
+  try {
+    const isRepeated = (await connection.query('SELECT id FROM categories WHERE name = $1;', [name])).rowCount;
+
+    if (!isRepeated) {
 
       await connection.query('INSERT INTO categories (name) VALUES ($1);', [name]);
-      res.sendStatus(201);
-    } else {
-      res.sendStatus(409);
+      return res.sendStatus(201);
     }
+
+    res.sendStatus(409);
   } catch (error) {
     console.log(error);
     res.status(500).send(error);
