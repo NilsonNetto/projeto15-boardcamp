@@ -1,14 +1,39 @@
 import connection from "../db/db.js";
+import { gameSchema } from "../schemas/games.schema.js";
 
 const createGame = async (req, res) => {
-  const game = req.body;
+  const { name, image, stockTotal, categoryId, pricePerDay } = req.body;
+
+  const validation = gameSchema.validate({
+    name,
+    image,
+    stockTotal,
+    categoryId,
+    pricePerDay
+  }, { abortEarly: false });
+
+  if (validation.error) {
+    const errors = validation.error.details.map(error => error.message);
+    return res.status(400).send(errors);
+  }
 
   try {
-    const isValid = (await connection.query('SELECT id FROM games WHERE name = $1', [game.name])).rowCount;
+    const categoryExists = (await connection.query(`SELECT id FROM categories WHERE id = $1;`,
+      [categoryId])).rowCount;
 
-    //fazer validação joi para não ser vazio
-    if (isValid === 0) {
-      await connection.query('INSERT INTO games (name, image, "stockTotal", "categoryId", "pricePerDay") VALUES ($1,$2,$3,$4,$5);', [game.name, game.image, game.stockTotal, game.categoryId, game.pricePerDay]);
+    if (!categoryExists) {
+      return res.sendStatus(400);
+    }
+
+    const isRepeated = (await connection.query(`SELECT id FROM games WHERE name = $1`,
+      [name])).rowCount;
+
+    if (!isRepeated) {
+      await connection.query(`
+      INSERT INTO games 
+        (name, image, "stockTotal", "categoryId", "pricePerDay") 
+      VALUES ($1,$2,$3,$4,$5);`,
+        [name, image, stockTotal, categoryId, pricePerDay]);
       return res.sendStatus(201);
     }
 
