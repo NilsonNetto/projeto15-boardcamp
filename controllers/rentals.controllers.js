@@ -1,17 +1,51 @@
 import connection from "../db/db.js";
+import dayjs from "dayjs";
+import { rentalSchema } from "../schemas/rentals.schema.js";
 
 const createRental = async (req, res) => {
   const { customerId, gameId, daysRented } = req.body;
-  const rentDate = dayToday();
+  const rentDate = dayjs().format('YYYY-MM-DD');
+
+  const validation = rentalSchema.validate({
+    customerId,
+    gameId,
+    daysRented
+  }, { abortEarly: false });
+
+  if (validation.error) {
+    const errors = validation.error.details.map(error => error.message);
+    return res.status(400).send(errors);
+  }
 
   try {
 
-    const { pricePerDay } = (await connection.query('SELECT "pricePerDay" FROM games WHERE id = $1;', [gameId])).rows[0];
-    const originalPrice = pricePerDay * daysRented;
+    const gameExists = (await connection.query('SELECT * FROM games WHERE id = $1;', [gameId])).rows[0];
 
-    await connection.query('INSERT INTO rentals ("customerId", "gameId", "rentDate", "daysRented", "returnDate", "originalPrice", "delayFee") VALUES ($1,$2,$3,$4,NULL,$5,NULL);', [customerId, gameId, rentDate, daysRented, originalPrice]);
+    const userExists = (await connection.query(`SELECT id FROM customers WHERE id = $1;`, [customerId])).rowCount;
 
-    res.sendStatus(200);
+    if (!userExists || !gameExists) {
+      return res.sendStatus(400);
+    }
+
+    const originalPrice = gameExists.pricePerDay * daysRented;
+
+    const gameRentals = (await connection.query(`
+    SELECT *
+    FROM rentals
+    WHERE "gameId" = $1 AND "returnDate" IS NULL`,
+      [gameId])).rowCount;
+
+    if (gameRentals >= gameExists.stockTotal) {
+      return res.sendStatus(400);
+    }
+
+    await connection.query(`
+    INSERT INTO rentals 
+      ("customerId", "gameId", "rentDate", "daysRented", "returnDate", "originalPrice", "delayFee") 
+    VALUES ($1,$2,$3,$4,NULL,$5,NULL);`,
+      [customerId, gameId, rentDate, daysRented, originalPrice]);
+
+    res.sendStatus(201);
 
   } catch (error) {
     console.log(error);
@@ -81,7 +115,7 @@ const listRentals = async (req, res) => {
 
 const endRental = async (req, res) => {
   const rentalId = req.params.id;
-  const returnDate = dayToday();
+  const returnDate = dayjs().format('YYYY-MM-DD');
   const dayMiliseconds = 1000 * 60 * 60 * 24;
   let delayFee = 0;
 
@@ -92,7 +126,7 @@ const endRental = async (req, res) => {
   try {
     const rental = (await connection.query(`SELECT * FROM rentals WHERE id = $1;`, [rentalId])).rows[0];
 
-    if (!rental || isNaN(rentalId)) {
+    if (!rental) {
       return res.sendStatus(404);
     }
 
@@ -143,13 +177,5 @@ const deleteRental = async (req, res) => {
     res.status(500).send(error);
   }
 };
-
-function dayToday() {
-  const date = new Date();
-  const year = date.getFullYear().toString();
-  const month = date.getMonth().toString().padStart(2, "0");
-  const day = date.getDate().toString().padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
 
 export { createRental, listRentals, endRental, deleteRental };

@@ -49,11 +49,23 @@ const listGames = async (req, res) => {
   const { name } = req.query;
   try {
     if (name) {
-      const games = (await connection.query('SELECT games.*, categories.name AS "categoryName" FROM games JOIN categories ON games."categoryId" = categories.id WHERE games.name ILIKE $1;', [`${name}%`])).rows;
+      const games = (await connection.query(`
+      SELECT 
+        games.*, categories.name AS "categoryName" 
+      FROM games 
+      JOIN categories 
+      ON games."categoryId" = categories.id 
+      WHERE games.name ILIKE $1;`,
+        [`${name}%`])).rows;
 
       return res.send(games);
     }
-    const games = (await connection.query('SELECT games.*, categories.name AS "categoryName" FROM games JOIN categories ON games."categoryId" = categories.id;')).rows;
+    const games = (await connection.query(`
+    SELECT 
+      games.*, categories.name AS "categoryName" 
+    FROM games 
+    JOIN categories 
+    ON games."categoryId" = categories.id;`)).rows;
 
     res.send(games);
   } catch (error) {
