@@ -116,13 +116,40 @@ const endRental = async (req, res) => {
 
 };
 
+const deleteRental = async (req, res) => {
+  const rentalId = req.params.id;
+
+  if (isNaN(rentalId)) {
+    return res.sendStatus(404);
+  }
+
+  try {
+
+    const rental = (await connection.query(`SELECT * FROM rentals WHERE id = $1;`, [rentalId])).rows[0];
+
+    if (!rental) {
+      return res.sendStatus(404);
+    }
+
+    if (rental.returnDate) {
+      await connection.query(`DELETE FROM rentals WHERE id = $1;`, [rentalId]);
+      return res.sendStatus(200);
+    }
+
+    res.sendStatus(400);
+
+  } catch (error) {
+    console.log(error);
+    res.status(500).send(error);
+  }
+};
+
 function dayToday() {
   const date = new Date();
   const year = date.getFullYear().toString();
   const month = date.getMonth().toString().padStart(2, "0");
   const day = date.getDate().toString().padStart(2, "0");
-  console.log(`${year}-${month}-${day}`);
   return `${year}-${month}-${day}`;
 }
 
-export { createRental, listRentals, endRental };
+export { createRental, listRentals, endRental, deleteRental };

@@ -9,4 +9,6 @@ router.get('/rentals', rentalsControllers.listRentals);
 
 router.post('/rentals/:id/return', rentalsControllers.endRental);
 
+router.delete('/rentals/:id', rentalsControllers.deleteRental);
+
 export default router;
