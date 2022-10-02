@@ -1,20 +1,7 @@
 import connection from "../db/db.js";
-import { customerSchema } from "../schemas/customers.schema.js";
 
 const createCustomer = async (req, res) => {
-  const { name, phone, cpf, birthday } = req.body;
-
-  const validation = customerSchema.validate({
-    name,
-    phone,
-    cpf,
-    birthday,
-  }, { abortEarly: false });
-
-  if (validation.error) {
-    const errors = validation.error.details.map(error => error.message);
-    return res.status(400).send(errors);
-  }
+  const { name, phone, cpf, birthday } = res.locals.body;
 
   try {
 
@@ -34,19 +21,7 @@ const createCustomer = async (req, res) => {
 
 const updateCustomer = async (req, res) => {
   const userId = req.params.id;
-  const { name, phone, cpf, birthday } = req.body;
-
-  const validation = customerSchema.validate({
-    name,
-    phone,
-    cpf,
-    birthday,
-  }, { abortEarly: false });
-
-  if (validation.error) {
-    const errors = validation.error.details.map(error => error.message);
-    return res.status(400).send(errors);
-  }
+  const { name, phone, cpf, birthday } = res.locals.body;
 
   try {
 
