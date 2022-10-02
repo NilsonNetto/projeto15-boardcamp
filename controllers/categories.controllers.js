@@ -12,7 +12,7 @@ const createCategory = async (req, res) => {
   }
 
   try {
-    const isRepeated = (await connection.query('SELECT id FROM categories WHERE name = $1;', [name])).rowCount;
+    const isRepeated = (await connection.query('SELECT id FROM categories WHERE LOWER(name) = LOWER($1);', [name])).rowCount;
 
     if (!isRepeated) {
 

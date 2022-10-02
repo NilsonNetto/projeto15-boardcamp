@@ -25,7 +25,7 @@ const createGame = async (req, res) => {
       return res.sendStatus(400);
     }
 
-    const isRepeated = (await connection.query(`SELECT id FROM games WHERE name = $1`,
+    const isRepeated = (await connection.query(`SELECT id FROM games WHERE LOWER(name) = LOWER($1)`,
       [name])).rowCount;
 
     if (!isRepeated) {
