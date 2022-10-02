@@ -58,7 +58,7 @@ const updateCustomer = async (req, res) => {
 
       if (!isRepeated.rowCount || customer.cpf === isRepeated.rows[0].cpf) {
         await connection.query('UPDATE customers SET name = $1, phone = $2, cpf = $3, birthday = $4 WHERE id = $5;', [name, phone, cpf, birthday, userId]);
-        return res.sendStatus(201);
+        return res.sendStatus(200);
       }
 
       return res.sendStatus(409);
