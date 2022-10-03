@@ -1,10 +1,10 @@
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
-import categoriesRouter from "../routers/categories.routers.js";
-import customersRouter from "../routers/customers.routers.js";
-import gamesRouter from "../routers/games.routers.js";
-import rentalsRouter from "../routers/rentals.routers.js";
+import categoriesRouter from "./routers/categories.routers.js";
+import customersRouter from "./routers/customers.routers.js";
+import gamesRouter from "./routers/games.routers.js";
+import rentalsRouter from "./routers/rentals.routers.js";
 dotenv.config();
 
 const app = express();
