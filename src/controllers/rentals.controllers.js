@@ -136,8 +136,11 @@ const endRental = async (req, res) => {
 
     const daysPassed = (Math.floor((Date.now() - rental.rentDate.getTime()) / dayMiliseconds));
 
-    if (daysPassed > rental.daysRented) {
-      delayFee = daysPassed * rental.originalPrice;
+    const delayedDays = daysPassed - rental.daysRented;
+
+    if (delayedDays > 0) {
+      const pricePerDay = rental.originalPrice / rental.daysRented;
+      delayFee = delayedDays * pricePerDay;
     }
 
     await connection.query(`UPDATE rentals SET "returnDate" = $1, "delayFee" = $2 WHERE id = $3;`, [returnDate, delayFee, rentalId]);
